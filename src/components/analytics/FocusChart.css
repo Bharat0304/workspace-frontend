@@ -1,0 +1,7 @@
+/* Styles for focus chart */
+.focus-performance { background: #fff; border-radius: 12px; padding: 16px; box-shadow: 0 1px 3px rgba(0,0,0,0.08); }
+.focus-score-container { display: flex; gap: 24px; align-items: center; }
+.score-text { display: flex; flex-direction: column; align-items: center; margin-top: -140px; }
+.score-value { font-size: 28px; font-weight: 700; }
+.score-label { color: #6b7280; font-size: 12px; }
+.metric { display: flex; justify-content: space-between; padding: 8px 0; }

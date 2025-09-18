@@ -1,6 +1,6 @@
 import React from 'react';
 import { Clock, Target, Trophy, Calendar } from 'lucide-react';
-import './StatsCards.css';
+import './StatsCard.css';
 
 const StatsCards: React.FC = () => {
   const stats = [

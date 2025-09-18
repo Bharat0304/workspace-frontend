@@ -1,0 +1,6 @@
+/* Styles for active session */
+.active-session { background: #fff; border-radius: 12px; padding: 16px; box-shadow: 0 1px 3px rgba(0,0,0,0.08); margin: 16px 0; }
+.session-header { display: flex; justify-content: space-between; align-items: center; }
+.session-metrics { display: grid; grid-template-columns: repeat(3, minmax(0,1fr)); gap: 12px; margin: 16px 0; }
+.session-controls { display: flex; gap: 12px; }
+.control-btn { background: #f3f4f6; border: none; padding: 8px 12px; border-radius: 8px; cursor: pointer; }

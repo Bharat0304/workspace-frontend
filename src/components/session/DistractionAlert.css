@@ -1,0 +1,7 @@
+/* Styles for distraction alert modal */
+.distraction-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.5); display: flex; align-items: center; justify-content: center; }
+.distraction-modal { background: #fff; padding: 16px; border-radius: 12px; width: 360px; text-align: center; }
+.alert-actions { display: flex; gap: 12px; justify-content: center; margin-top: 12px; }
+.refocus-btn, .snooze-btn { padding: 8px 12px; border-radius: 8px; border: none; cursor: pointer; }
+.refocus-btn { background: #10b981; color: white; }
+.snooze-btn { background: #f3f4f6; }

@@ -1,9 +1,9 @@
 import React from 'react';
-import HeroSection from '../components/dashboard/HeroSection';
-import StatsCards from '../components/dashboard/StatsCards';
-import QuickActions from '../components/dashboard/QuickActions';
-import AIFeedback from '../components/dashboard/AIFeedback';
-import ActiveSession from '../components/session/ActiveSession';
+import HeroSection from '../dashboard/HeroSection';
+import StatsCards from '../dashboard/StatsCard';
+import QuickActions from '../dashboard/QuickAction';
+import AIFeedback from '../dashboard/AIFeedback';
+import ActiveSession from '../session/ActiveSession';
 import './Dashboard.css';
 
 const Dashboard: React.FC = () => {

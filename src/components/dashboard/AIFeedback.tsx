@@ -1,6 +1,6 @@
 import React from 'react';
 import { Bot } from 'lucide-react';
-import '../dashboard/'
+import './AIFeedback.css'
 
 const AIFeedback: React.FC = () => {
   return (

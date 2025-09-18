@@ -1,0 +1,5 @@
+/* Basic layout for Analytics page */
+.analytics-page { padding: 24px; }
+.analytics-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; }
+.analytics-content { display: grid; grid-template-columns: 1fr 320px; gap: 24px; }
+.session-details { display: grid; grid-template-columns: repeat(4, minmax(0,1fr)); gap: 12px; margin: 16px 0; }

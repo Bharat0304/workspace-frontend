@@ -1,13 +1,13 @@
 import React from 'react';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
-import Layout from './components/layout/layout';
+import Layout from './components/layout/Layout';
 import Dashboard from './components/pages/Dashboard';
 import Analytics from './components/pages/Analytics';
 import Schedule from './components/pages/Schedule';
 
 import Settings from './components/pages/Settings';
 import Pricing from './components/pages/Pricing';
-import './components/styles/global.css';
+import './components/styles/globals.css';
 
 const App: React.FC = () => {
   return (

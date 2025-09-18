@@ -1,8 +1,8 @@
 import React from 'react';
 import { ArrowLeft, Download, FileText, Mail } from 'lucide-react';
-import SessionAnalytics from '../components/analytics/SessionAnalytics';
-import FocusChart from '../components/analytics/FocusChart';
-import DistractionAnalysis from '../components/analytics/DistractionAnalysis';
+import SessionAnalytics from '../analytics/SessionAnalytics';
+import FocusChart from '../analytics/FocusChart';
+import DistractionAnalysis from '../analytics/DistractionAnalysis';
 import './Analytics.css';
 
 const Analytics: React.FC = () => {

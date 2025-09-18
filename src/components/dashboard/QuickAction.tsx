@@ -1,6 +1,6 @@
 import React from 'react';
 import { Play, Calendar, BarChart3 } from 'lucide-react';
-import './QuickActions.css';
+import './QuickAction.css';
 
 const QuickActions: React.FC = () => {
   const actions = [
