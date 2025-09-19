@@ -1,22 +1,23 @@
 import React from 'react';
-import { Bell, User } from 'lucide-react';
+import { Bell } from 'lucide-react';
+import { Link } from 'react-router-dom';
 import './Header.css';
 
 const Header: React.FC = () => {
   return (
     <header className="header">
       <div className="header-content">
-        <div className="brand">
+        <Link to="/dashboard" className="brand" aria-label="Go to dashboard">
           <div className="brand-icon">⚡</div>
           <span className="brand-text">WorkSpace</span>
-        </div>
+        </Link>
         
         <nav className="navigation">
-          <a href="/" className="nav-link">Dashboard</a>
-          <a href="/analytics" className="nav-link">Analytics</a>
-          <a href="/schedule" className="nav-link">Schedule</a>
-          <a href="/goals" className="nav-link">Goals</a>
-          <a href="/settings" className="nav-link">Settings</a>
+          <Link to="/dashboard" className="nav-link">Dashboard</Link>
+          <Link to="/dashboard/analytics" className="nav-link">Analytics</Link>
+          <Link to="/dashboard/schedule" className="nav-link">Schedule</Link>
+          <Link to="/dashboard" className="nav-link">Goals</Link>
+          <Link to="/dashboard/settings" className="nav-link">Settings</Link>
         </nav>
 
         <div className="header-actions">

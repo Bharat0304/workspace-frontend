@@ -1,3 +1,50 @@
-/* Basic layout for Dashboard page */
-.dashboard { padding: 24px; }
-.dashboard-content { display: grid; grid-template-columns: 1fr; gap: 24px; }
+.dashboard {
+    min-height: 100vh;
+    background: #f8fafc;
+    padding: 0;
+  }
+  
+  .dashboard-container {
+    max-width: 1400px;
+    margin: 0 auto;
+    padding: 2rem;
+    display: flex;
+    flex-direction: column;
+    gap: 2rem;
+  }
+  
+  .dashboard-grid {
+    display: grid;
+    grid-template-columns: 1fr 400px;
+    gap: 2rem;
+    align-items: start;
+  }
+  
+  .dashboard-left {
+    display: flex;
+    flex-direction: column;
+  }
+  
+  .dashboard-right {
+    display: flex;
+    flex-direction: column;
+    gap: 2rem;
+  }
+  
+  @media (max-width: 1200px) {
+    .dashboard-grid {
+      grid-template-columns: 1fr;
+    }
+    
+    .dashboard-right {
+      order: -1;
+    }
+  }
+  
+  @media (max-width: 768px) {
+    .dashboard-container {
+      padding: 1rem;
+      gap: 1.5rem;
+    }
+  }
+  

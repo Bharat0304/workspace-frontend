@@ -1,5 +1,5 @@
 .hero-section {
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    background: linear-gradient(135deg, #5f77ea 0%, #6b3bb0 100%);
     min-height: 80vh;
     display: flex;
     align-items: center;
@@ -507,3 +507,93 @@
     scrollbar-width: none;
   }
   
+  /* New: trust strip above title */
+  .trust-row {
+    display: inline-flex;
+    align-items: center;
+    gap: 1rem;
+    padding: 0.5rem 0.75rem;
+    background: rgba(255, 255, 255, 0.12);
+    border: 1px solid rgba(255, 255, 255, 0.25);
+    border-radius: 999px;
+    margin-bottom: 1.25rem;
+    backdrop-filter: blur(8px);
+  }
+  .trust-item {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    color: #fff;
+    font-weight: 600;
+    font-size: 0.9rem;
+    opacity: 0.95;
+  }
+  .trust-row .icon { width: 18px; height: 18px; color: #fde68a; }
+  .trust-row .divider { width: 1px; height: 16px; background: rgba(255,255,255,0.3); }
+
+  /* New: feature bullets */
+  .feature-list {
+    list-style: none;
+    margin: 0 0 1.5rem 0;
+    padding: 0;
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0.5rem 1rem;
+    max-width: 520px;
+  }
+  .feature-item {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    color: rgba(255,255,255,0.95);
+    font-weight: 500;
+  }
+  .feature-item .icon { width: 18px; height: 18px; color: #a7f3d0; }
+
+  /* New: image frame and glow */
+  .image-frame {
+    position: relative;
+    display: inline-block;
+    border-radius: 1rem;
+    overflow: hidden;
+    box-shadow: 0 20px 60px rgba(0,0,0,0.35);
+    border: 1px solid rgba(255,255,255,0.2);
+  }
+  .image-glow {
+    position: absolute;
+    inset: auto 0 -20px 0;
+    height: 40px;
+    background: radial-gradient(50% 100% at 50% 0%, rgba(167, 243, 208, 0.6), rgba(167, 243, 208, 0) 70%);
+    filter: blur(12px);
+    pointer-events: none;
+  }
+
+  /* New: badges under image */
+  .badge-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    margin-top: 1rem;
+  }
+  .badge {
+    background: rgba(255,255,255,0.14);
+    color: #fff;
+    border: 1px solid rgba(255,255,255,0.25);
+    padding: 0.4rem 0.75rem;
+    border-radius: 999px;
+    font-size: 0.8rem;
+    font-weight: 600;
+    backdrop-filter: blur(8px);
+  }
+
+  /* Anchor buttons inherit button look */
+  .btn-primary,
+  .btn-secondary {
+    text-decoration: none;
+  }
+
+  /* Responsive tweaks for new pieces */
+  @media (max-width: 768px) {
+    .feature-list { grid-template-columns: 1fr; }
+    .trust-row { margin-left: auto; margin-right: auto; }
+  }

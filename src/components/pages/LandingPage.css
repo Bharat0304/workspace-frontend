@@ -1,0 +1,39 @@
+.landing-page {
+  min-height: 100vh;
+  background: linear-gradient(135deg, #5f77ea 0%, #6b3bb0 100%);
+  position: relative;
+}
+
+.landing-page::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: url('data:image/svg+xml,<svg width="60" height="60" viewBox="0 0 60 60" xmlns="http://www.w3.org/2000/svg"><g fill="none" fill-rule="evenodd"><g fill="%23ffffff" fill-opacity="0.05"><circle cx="7" cy="7" r="1"/></g></svg>') repeat;
+  pointer-events: none;
+}
+
+/* Ensure sections sit above the texture */
+.landing-page > * { position: relative; z-index: 1; }
+
+/* Smooth scrolling */
+html { scroll-behavior: smooth; }
+
+/* Section spacing */
+section { padding: 6rem 0; }
+
+/* Override section backgrounds to show gradient */
+.landing-page .features-section,
+.landing-page .testimonials-section,
+.landing-page .how-it-works-section,
+.landing-page .support-section,
+.landing-page .faq-section,
+.landing-page .about-section,
+.landing-page .pricing-section { background: transparent !important; }
+
+/* Container utility */
+.container { max-width: 1200px; margin: 0 auto; padding: 0 2rem; }
+
+@media (max-width: 768px) {
+  section { padding: 4rem 0; }
+  .container { padding: 0 1rem; }
+}

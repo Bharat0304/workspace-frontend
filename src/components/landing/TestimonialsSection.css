@@ -1,0 +1,140 @@
+.testimonials-section {
+    padding: 6rem 0;
+    background: #f8fafc;
+  }
+  
+  .testimonials-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+    gap: 2rem;
+    margin-bottom: 4rem;
+  }
+  
+  .testimonial-card {
+    background: white;
+    padding: 2rem;
+    border-radius: 1.5rem;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+    border: 1px solid #e5e7eb;
+    transition: all 0.3s ease;
+  }
+  
+  .testimonial-card:nth-child(1) {
+    background: linear-gradient(135deg, #eff6ff, #dbeafe);
+    border-color: #bfdbfe;
+  }
+  
+  .testimonial-card:nth-child(2) {
+    background: linear-gradient(135deg, #f0fdfa, #ecfdf5);
+    border-color: #a7f3d0;
+  }
+  
+  .testimonial-card:nth-child(3) {
+    background: linear-gradient(135deg, #fffbeb, #fef3c7);
+    border-color: #fcd34d;
+  }
+  
+  .testimonial-card:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+  }
+  
+  .rating {
+    display: flex;
+    gap: 0.25rem;
+    margin-bottom: 1rem;
+  }
+  
+  .star {
+    font-size: 1rem;
+  }
+  
+  .testimonial-text {
+    font-size: 1rem;
+    line-height: 1.6;
+    color: #374151;
+    margin-bottom: 1.5rem;
+    font-style: italic;
+    margin: 0 0 1.5rem 0;
+  }
+  
+  .testimonial-author {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+  }
+  
+  .author-avatar {
+    width: 3rem;
+    height: 3rem;
+    border-radius: 50%;
+    object-fit: cover;
+  }
+  
+  .author-name {
+    font-weight: 600;
+    color: #111827;
+    font-size: 0.95rem;
+  }
+  
+  .author-role {
+    color: #6b7280;
+    font-size: 0.875rem;
+  }
+  
+  .trusted-institutions {
+    text-align: center;
+    padding-top: 3rem;
+    border-top: 1px solid #e5e7eb;
+  }
+  
+  .trusted-institutions h3 {
+    font-size: 1.5rem;
+    font-weight: 600;
+    color: #374151;
+    margin-bottom: 2rem;
+  }
+  
+  .institutions-logos {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 3rem;
+    flex-wrap: wrap;
+    opacity: 0.6;
+  }
+  
+  .institutions-logos span {
+    font-size: 1.125rem;
+    font-weight: 600;
+    color: #6b7280;
+    transition: opacity 0.3s ease;
+  }
+  
+  .institutions-logos span:hover {
+    opacity: 1;
+  }
+  
+  @media (max-width: 768px) {
+    .testimonials-section {
+      padding: 4rem 0;
+    }
+    
+    .testimonials-grid {
+      grid-template-columns: 1fr;
+      gap: 1.5rem;
+    }
+    
+    .testimonial-card {
+      padding: 1.5rem;
+    }
+    
+    .institutions-logos {
+      gap: 1.5rem;
+    }
+    
+    .institutions-logos span {
+      font-size: 1rem;
+    }
+  }
+  
