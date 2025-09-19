@@ -1,5 +1,7 @@
-import React, { useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
+import { getSessions } from '../../services/sessionStore';
+import type { SavedSession } from '../../services/sessionStore';
 
 interface SessionData {
   id: string;
@@ -30,25 +32,38 @@ const Analytics: React.FC = () => {
   const [subjectFilter, setSubjectFilter] = useState('All Subjects');
   const [timeFilter, setTimeFilter] = useState('Last 7 days');
 
-  const sessionsData: SessionData[] = [
-    { id: '1', subject: 'Mathematics - Calculus', focusScore: 94, duration: 58, date: 'Today', time: '2:00 PM', color: 'green' },
-    { id: '2', subject: 'Physics - Mechanics', focusScore: 87, duration: 45, date: 'Yesterday', time: '4:30 PM', color: 'yellow' },
-    { id: '3', subject: 'Chemistry - Organic', focusScore: 72, duration: 30, date: 'Yesterday', time: '10:00 AM', color: 'red' },
-    { id: '4', subject: 'Biology - Cell Structure', focusScore: 91, duration: 40, date: '2 days ago', time: '3:15 PM', color: 'green' },
-    { id: '5', subject: 'Mathematics - Algebra', focusScore: 78, duration: 60, date: '3 days ago', time: '1:00 PM', color: 'yellow' },
-  ];
+  // Load saved sessions from localStorage
+  const [saved, setSaved] = useState<SavedSession[]>([]);
+  useEffect(() => { setSaved(getSessions()); }, []);
+  const sessionsData: SessionData[] = useMemo(() => {
+    if (!saved.length) return [];
+    return saved.map(s => {
+      const start = new Date(s.startIso);
+      const end = new Date(s.endIso);
+      const durationMin = Math.max(1, Math.round((end.getTime() - start.getTime()) / 60000));
+      const when = start.toLocaleDateString();
+      const time = start.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+      const color: SessionData['color'] = s.averageFocus >= 85 ? 'green' : s.averageFocus >= 60 ? 'yellow' : 'red';
+      return { id: s.id, subject: s.subject, focusScore: Math.round(s.averageFocus), duration: durationMin, date: when, time, color };
+    });
+  }, [saved]);
 
-  const currentSession = {
-    subject: 'Mathematics - Calculus',
-    chapter: 'Chapter 12: Limits and Derivatives',
-    date: 'Dec 18, 2024',
-    startTime: '2:00 PM',
-    endTime: '2:58 PM',
-    duration: '58 minutes',
-    focusScore: 94,
-    focusedTime: '54.5 min',
-    distractedTime: '3.5 min',
-    productivityScore: 'A+'
+  const latest = saved[0];
+  const currentSession = latest ? {
+    subject: latest.subject,
+    chapter: 'Session Summary',
+    date: new Date(latest.startIso).toLocaleDateString(),
+    startTime: new Date(latest.startIso).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+    endTime: new Date(latest.endIso).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+    duration: `${Math.max(1, Math.round((new Date(latest.endIso).getTime() - new Date(latest.startIso).getTime())/60000))} minutes`,
+    focusScore: Math.round(latest.averageFocus),
+    focusedTime: `${Math.round(latest.averageFocus/100 * Math.max(1, Math.round((new Date(latest.endIso).getTime() - new Date(latest.startIso).getTime())/60000)))} min`,
+    distractedTime: `${Math.max(0, Math.round((1 - latest.averageFocus/100) * Math.max(1, Math.round((new Date(latest.endIso).getTime() - new Date(latest.startIso).getTime())/60000))))} min`,
+    productivityScore: latest.averageFocus >= 85 ? 'A+' : latest.averageFocus >= 70 ? 'A' : latest.averageFocus >= 50 ? 'B' : 'C'
+  } : {
+    subject: 'No saved sessions yet',
+    chapter: 'Start a session from Dashboard',
+    date: '-', startTime: '-', endTime: '-', duration: '-', focusScore: 0, focusedTime: '0 min', distractedTime: '0 min', productivityScore: '-'
   };
 
   const distractionBreakdown: DistractionData[] = [
@@ -84,14 +99,15 @@ const Analytics: React.FC = () => {
     }
   ];
 
-  const timelineData = [
-    { time: '2:00', type: 'focused' },
-    { time: '2:10', type: 'focused' },
-    { time: '2:20', type: 'distracted' },
-    { time: '2:30', type: 'focused' },
-    { time: '2:40', type: 'distracted' },
-    { time: '2:50', type: 'focused' }
-  ];
+  // Build a simple timeline from saved scores (every point == one reading)
+  const timelineData = useMemo(() => {
+    if (!latest?.scores?.length) return [] as { time: string; type: 'focused' | 'distracted' }[];
+    const now = new Date(latest.endIso);
+    return latest.scores.map((s, i) => ({
+      time: `${i}`,
+      type: s >= 60 ? 'focused' : 'distracted'
+    }));
+  }, [latest]);
 
   const handleExport = () => {
     console.log('Exporting data...');
@@ -855,10 +871,10 @@ const Analytics: React.FC = () => {
                         cx="75"
                         cy="75"
                         r="45"
-                        style={styles.progressFill}
+                        style={{...styles.progressFill, strokeDashoffset: `${283 - Math.max(0, Math.min(100, currentSession.focusScore)) / 100 * 283}`}}
                       />
                     </svg>
-                    <div style={styles.progressText}>94%</div>
+                    <div style={styles.progressText}>{currentSession.focusScore}%</div>
                   </div>
                   <div style={styles.progressLabel}>Focus Score</div>
                 </div>
@@ -962,18 +978,12 @@ const Analytics: React.FC = () => {
             <div style={styles.timelineSection}>
               <h3 style={styles.sectionTitle}>Session Timeline</h3>
               <div style={styles.timeline}>
-                {timelineData.map((point, index) => (
+                {timelineData.length ? timelineData.map((point, index) => (
                   <div key={index} style={styles.timelineBar}>
-                    <div
-                      style={
-                        point.type === 'focused'
-                          ? styles.timelineBarFocused
-                          : styles.timelineBarDistracted
-                      }
-                    />
+                    <div style={ point.type === 'focused' ? styles.timelineBarFocused : styles.timelineBarDistracted } />
                     <div style={styles.timelineTime}>{point.time}</div>
                   </div>
-                ))}
+                )) : (<div style={{ color: '#6b7280' }}>No trend data yet. End a session to see your focus timeline.</div>)}
               </div>
               <div style={styles.timelineLegend}>
                 <div style={styles.legendItem}>

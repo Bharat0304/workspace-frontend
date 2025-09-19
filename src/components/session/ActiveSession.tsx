@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Pause, Square, RotateCcw } from 'lucide-react';
 import './ActiveSession.css';
+import WebcamFocus from './WebcamFocus';
 
 const ActiveSession: React.FC = () => {
   const [timeElapsed, setTimeElapsed] = useState('2:36:52');
@@ -36,6 +37,11 @@ const ActiveSession: React.FC = () => {
           <span className="metric-value">3</span>
           <span className="metric-label">Distractions</span>
         </div>
+      </div>
+
+      {/* Realtime webcam focus widget */}
+      <div style={{ marginTop: 16 }}>
+        <WebcamFocus intervalMs={1500} />
       </div>
 
       <div className="session-controls">
