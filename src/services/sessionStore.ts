@@ -5,6 +5,8 @@ export interface SavedSession {
   endIso: string;
   averageFocus: number;
   scores: number[];
+  timeline?: { t: number; score: number }[];
+  sites?: { domain: string; durationSec: number; avgFocus: number }[];
 }
 
 const KEY = 'ws_sessions';
@@ -12,7 +14,13 @@ const KEY = 'ws_sessions';
 export function getSessions(): SavedSession[] {
   try {
     const raw = localStorage.getItem(KEY);
-    return raw ? (JSON.parse(raw) as SavedSession[]) : [];
+    const parsed = raw ? (JSON.parse(raw) as SavedSession[]) : [];
+    // Ensure fields exist for older entries
+    return parsed.map(s => ({
+      ...s,
+      timeline: s.timeline || [],
+      sites: s.sites || []
+    }));
   } catch {
     return [];
   }

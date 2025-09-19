@@ -18,14 +18,13 @@ const WebcamFocus: React.FC<Props> = ({ intervalMs = 1500, onScore, onPhoneDetec
   const [recommendations, setRecommendations] = useState<string[]>([]);
   const [faceDetected, setFaceDetected] = useState<boolean>(false);
   const [lookingAtScreen, setLookingAtScreen] = useState<boolean>(false);
+  // Phone detection kept internally but no UI preview
   const [phoneDetected, setPhoneDetected] = useState<boolean>(false);
-  const [phoneRiskLevel, setPhoneRiskLevel] = useState<string>('low');
-  const [phoneConfidence, setPhoneConfidence] = useState<number>(0);
   const [running, setRunning] = useState<boolean>(true);
   const [errorToast, setErrorToast] = useState<string | null>(null);
   const [history, setHistory] = useState<number[]>([]);
   const startingRef = useRef<boolean>(false);
-  const [overlayB64, setOverlayB64] = useState<string | null>(null);
+  // Debug overlay removed
 
   const stopCurrentStream = () => {
     const existing = videoRef.current?.srcObject as MediaStream | null;
@@ -115,9 +114,7 @@ const WebcamFocus: React.FC<Props> = ({ intervalMs = 1500, onScore, onPhoneDetec
         setFaceDetected(!!res?.face_detected);
         setLookingAtScreen(!!res?.looking_at_screen);
         setPhoneDetected(!!(res as any)?.phone_detected);
-        setPhoneRiskLevel(((res as any)?.phone_risk_level || 'low') as string);
-        setPhoneConfidence(((res as any)?.phone_confidence || 0) as number);
-        setOverlayB64((res as any)?.overlay_b64 || null);
+        // Overlay fields removed from backend response
 
         if (typeof score === 'number') {
           setHistory(prev => {
@@ -173,17 +170,12 @@ const WebcamFocus: React.FC<Props> = ({ intervalMs = 1500, onScore, onPhoneDetec
       )}
 
       <div style={{ display: 'flex', gap: 12 }}>
-        <div style={{ position: 'relative' }}>
-          <video ref={videoRef} playsInline muted style={{ width: 320, height: 240, borderRadius: 8, background: '#111', objectFit: 'cover', transform: 'scaleX(-1)' }} />
+        {/* Camera elements hidden but active for capture */}
+        <div style={{ position: 'absolute', width: 0, height: 0, overflow: 'hidden' }}>
+          <video ref={videoRef} playsInline muted style={{ width: 320, height: 240, objectFit: 'cover', transform: 'scaleX(-1)', display: 'none' }} />
           <canvas ref={canvasRef} style={{ display: 'none' }} />
-          {/* Phone warning banner */}
-          {phoneDetected && (
-            <div style={{ position: 'absolute', bottom: 8, left: 8, right: 8, background: '#321', color: '#fbb', padding: '6px 8px', borderRadius: 6, border: '1px solid #633' }}>
-              📱 Possible phone usage ({phoneRiskLevel}) — confidence {(phoneConfidence * 100).toFixed(0)}%
-            </div>
-          )}
         </div>
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 6, minWidth: 220 }}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 6, minWidth: 260 }}>
           <div style={{ fontSize: 14, color: '#aaa' }}>Realtime Focus</div>
           <div style={{ fontSize: 28, fontWeight: 700 }}>
             {focusScore !== null ? `${focusScore.toFixed(1)}%` : (loading ? 'Starting camera…' : (permissionError ? 'No camera' : '…'))}
@@ -191,12 +183,6 @@ const WebcamFocus: React.FC<Props> = ({ intervalMs = 1500, onScore, onPhoneDetec
           <div style={{ fontSize: 14, color: '#8dd' }}>Level: {focusLevel}</div>
           <div style={{ fontSize: 13, color: faceDetected ? '#8f8' : '#f88' }}>Face: {faceDetected ? 'detected' : 'not detected'}</div>
           <div style={{ fontSize: 13, color: lookingAtScreen ? '#8f8' : '#f88' }}>Eyes: {lookingAtScreen ? 'on screen' : 'away'}</div>
-          {overlayB64 && (
-            <div style={{ marginTop: 8 }}>
-              <div style={{ fontSize: 12, color: '#aaa', marginBottom: 4 }}>Debug overlay</div>
-              <img src={`data:image/jpeg;base64,${overlayB64}`} alt="debug overlay" style={{ width: 320, height: 'auto', borderRadius: 6, border: '1px solid #222' }} />
-            </div>
-          )}
           <div style={{ marginTop: 6 }}>
             <Trend />
           </div>

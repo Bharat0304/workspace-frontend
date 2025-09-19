@@ -7,7 +7,7 @@ import LastSessionSummary from '../dashboard/LastSessionSummary';
 import Footer from '../dashboard/Footer';
 import './Dashboard.css';
 import WebcamFocus from '../session/WebcamFocus';
-import { analyzeTab } from '../../services/extensionApi';
+import { analyzeTab, getLastTab, getLastEducationalUrl as apiGetLastEducationalUrl, setLastEducationalUrl as apiSetLastEducationalUrl } from '../../services/extensionApi';
 import { saveSession } from '../../services/sessionStore';
 
 // Lightweight in-file modal components to avoid creating many files
@@ -36,15 +36,71 @@ interface StudySession {
 }
 
 const Dashboard: React.FC = () => {
-  const [currentTime, setCurrentTime] = useState(new Date());
+  // Removed unused currentTime to fix lint
   const [activeSession, setActiveSession] = useState<StudySession | null>(null);
   const [focusScores, setFocusScores] = useState<number[]>([]);
   const [showAddModal, setShowAddModal] = useState(false);
   const [newSessionName, setNewSessionName] = useState('Study Session');
   const [playerUrl, setPlayerUrl] = useState<string>('');
+  const [lastEducationalUrl, setLastEducationalUrl] = useState<string>('https://www.youtube.com/embed/?listType=playlist&list=PL-osiE80TeTs4UjLw5MM6OjgkjFeUxCYH');
   const [blockReason, setBlockReason] = useState<string | null>(null);
   const [showSummary, setShowSummary] = useState(false);
   const [sessionStartIso, setSessionStartIso] = useState<string>('');
+  const [timeline, setTimeline] = useState<{ t: number; score: number }[]>([]);
+  const [sitesMap, setSitesMap] = useState<Record<string, { durationSec: number; focusSum: number; count: number }>>({});
+  const sitesIntervalRef = React.useRef<number | null>(null);
+  const lastTabPollRef = React.useRef<number | null>(null);
+
+  // Normalize YouTube URLs for storage (watch) and in-app playback (embed)
+  function normalizeYouTubeUrl(input: string): { watchUrl?: string; embedUrl?: string } {
+    try {
+      const u = new URL(input);
+      const host = u.hostname.replace('www.', '');
+      // youtu.be short link -> watch + embed
+      if (host === 'youtu.be') {
+        const id = u.pathname.replace('/', '');
+        if (id) {
+          return {
+            watchUrl: `https://www.youtube.com/watch?v=${id}`,
+            embedUrl: `https://www.youtube.com/embed/${id}`
+          };
+        }
+      }
+      if (host.endsWith('youtube.com')) {
+        // If it's already watch
+        if (u.pathname === '/watch') {
+          const id = u.searchParams.get('v') || '';
+          const list = u.searchParams.get('list');
+          if (id) {
+            return {
+              watchUrl: `https://www.youtube.com/watch?v=${id}` + (list ? `&list=${list}` : ''),
+              embedUrl: `https://www.youtube.com/embed/${id}` + (list ? `?list=${list}` : '')
+            };
+          }
+        }
+        // If it's embed already
+        if (u.pathname.startsWith('/embed/')) {
+          const id = u.pathname.split('/embed/')[1];
+          const list = u.searchParams.get('list');
+          if (id) {
+            return {
+              watchUrl: `https://www.youtube.com/watch?v=${id}` + (list ? `&list=${list}` : ''),
+              embedUrl: `https://www.youtube.com/embed/${id}` + (list ? `?list=${list}` : '')
+            };
+          }
+        }
+        // Playlist embed URL shape
+        if (u.searchParams.get('list') && u.searchParams.get('listType') === 'playlist') {
+          const list = u.searchParams.get('list')!;
+          return {
+            watchUrl: `https://www.youtube.com/playlist?list=${list}`,
+            embedUrl: `https://www.youtube.com/embed/?listType=playlist&list=${list}`
+          };
+        }
+      }
+    } catch {}
+    return {};
+  }
 
   const [todaySchedule] = useState<StudySession[]>([
     {
@@ -73,10 +129,108 @@ const Dashboard: React.FC = () => {
     }
   ]);
 
+  // Per-site aggregation sampler (every 10s while a session is active)
   useEffect(() => {
-    const timer = setInterval(() => setCurrentTime(new Date()), 1000);
-    return () => clearInterval(timer);
+    // clear any existing
+    if (sitesIntervalRef.current) {
+      window.clearInterval(sitesIntervalRef.current);
+      sitesIntervalRef.current = null;
+    }
+    if (!activeSession) {
+      return;
+    }
+    const sample = () => {
+      const addDomain = (domain?: string) => {
+        if (!domain) return;
+        const d = domain.replace('www.', '');
+        setSitesMap(prev => {
+          const cur = { ...(prev[d] || { durationSec: 0, focusSum: 0, count: 0 }) };
+          cur.durationSec += 10;
+          const last = focusScores.length ? focusScores[focusScores.length - 1] : 0;
+          cur.focusSum += last;
+          cur.count += 1;
+          return { ...prev, [d]: cur };
+        });
+      };
+
+      try {
+        addDomain(window.location.hostname);
+      } catch {}
+      try {
+        if (playerUrl) {
+          const u = new URL(playerUrl);
+          addDomain(u.hostname);
+        }
+      } catch {}
+    };
+    sample();
+    sitesIntervalRef.current = window.setInterval(sample, 10000);
+    return () => {
+      if (sitesIntervalRef.current) window.clearInterval(sitesIntervalRef.current);
+    };
+  }, [activeSession, playerUrl, focusScores]);
+
+  // Load last educational URL from localStorage on mount and initialize player
+  useEffect(() => {
+    try {
+      const s = localStorage.getItem('lastEducationalUrl');
+      if (s) {
+        const { watchUrl, embedUrl } = normalizeYouTubeUrl(s);
+        setLastEducationalUrl(watchUrl || s);
+        if (!playerUrl) setPlayerUrl(embedUrl || s);
+      }
+    } catch {}
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  // Also fetch from backend and reconcile
+  useEffect(() => {
+    (async () => {
+      try {
+        const serverUrl = await apiGetLastEducationalUrl();
+        if (serverUrl) {
+          const { watchUrl, embedUrl } = normalizeYouTubeUrl(serverUrl);
+          setLastEducationalUrl(prev => prev || watchUrl || serverUrl);
+          if (!playerUrl) setPlayerUrl(embedUrl || serverUrl);
+        }
+      } catch {}
+    })();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // Persist last educational URL changes to localStorage
+  useEffect(() => {
+    try {
+      if (lastEducationalUrl) localStorage.setItem('lastEducationalUrl', lastEducationalUrl);
+      if (lastEducationalUrl) console.log('[WorkSpace] Saved last educational URL:', lastEducationalUrl);
+    } catch {}
+  }, [lastEducationalUrl]);
+
+  // Poll last-tab endpoint and auto-redirect player to last educational URL on block
+  useEffect(() => {
+    if (lastTabPollRef.current) {
+      window.clearInterval(lastTabPollRef.current);
+      lastTabPollRef.current = null;
+    }
+    if (!activeSession) return;
+    const check = async () => {
+      try {
+        const resp = await getLastTab();
+        const r: any = (resp as any).result || {};
+        const shouldBlock = r.should_block === true || r.is_distraction === true;
+        if (shouldBlock) {
+          setBlockReason(r.block_message || r.warning_message || 'Blocked: Not educational');
+          console.log('[WorkSpace] Blocking detected. Redirecting player to last educational URL:', lastEducationalUrl);
+          if (lastEducationalUrl) setPlayerUrl(lastEducationalUrl);
+        }
+      } catch {}
+    };
+    check();
+    lastTabPollRef.current = window.setInterval(check, 5000);
+    return () => {
+      if (lastTabPollRef.current) window.clearInterval(lastTabPollRef.current);
+    };
+  }, [activeSession, lastEducationalUrl]);
 
   const handlePauseSession = () => {
     console.log('Pausing session...');
@@ -88,6 +242,12 @@ const Dashboard: React.FC = () => {
       const avg = averageFocus;
       const endIso = new Date().toISOString();
       if (activeSession) {
+        // Build sites summary from aggregated map
+        const sites: { domain: string; durationSec: number; avgFocus: number }[] = Object.entries(sitesMap).map(([domain, v]) => ({
+          domain,
+          durationSec: v.durationSec,
+          avgFocus: v.count ? v.focusSum / v.count : 0
+        })).sort((a,b)=> b.durationSec - a.durationSec);
         saveSession({
           id: activeSession.id,
           subject: activeSession.subject,
@@ -95,6 +255,8 @@ const Dashboard: React.FC = () => {
           endIso,
           averageFocus: Number.isFinite(avg) ? avg : 0,
           scores: focusScores,
+          timeline,
+          sites
         });
       }
     } catch (e) {
@@ -130,6 +292,8 @@ const Dashboard: React.FC = () => {
       status: 'in-progress'
     });
     setFocusScores([]);
+    setTimeline([]);
+    setSitesMap({});
     setPlayerUrl('https://www.youtube.com/embed/?listType=playlist&list=PL-osiE80TeTs4UjLw5MM6OjgkjFeUxCYH'); // default CS playlist
     setBlockReason(null);
     setShowAddModal(false);
@@ -137,6 +301,11 @@ const Dashboard: React.FC = () => {
 
   const onFocusScore = (score: number) => {
     setFocusScores(prev => [...prev, score]);
+    // also push into timeline as (elapsed seconds, score)
+    if (sessionStartIso) {
+      const t = Math.max(0, Math.round((Date.now() - new Date(sessionStartIso).getTime()) / 1000));
+      setTimeline(prev => [...prev, { t, score }]);
+    }
   };
 
   const averageFocus = focusScores.length ? (focusScores.reduce((a, b) => a + b, 0) / focusScores.length) : 0;
@@ -146,15 +315,29 @@ const Dashboard: React.FC = () => {
       // Heuristic title from URL
       const titleGuess = url;
       const res = await analyzeTab(url, titleGuess);
-      const r = res.result || {} as any;
-      if (r.content_type === 'educational' || r.severity === 'none' || r.should_block === false) {
-        setBlockReason(null);
-        setPlayerUrl(url);
-      } else {
-        setBlockReason(r.warning_message || 'Content not educational. Choose another video.');
+      const r = (res as any).result || {};
+      // Determine allow with multiple fallbacks (some analyzers use should_block / is_distraction)
+      const allow = (r as any).allow ?? !(((r as any).should_block === true) || ((r as any).is_distraction === true));
+      const details = (r as any).warning_message || (r as any).reason || (r as any).details || '';
+      if (!allow) {
+        setBlockReason(`Blocked: ${details || 'Not educational'}`);
+        // revert to last known educational player URL
+        if (lastEducationalUrl) {
+          setPlayerUrl(lastEducationalUrl);
+        }
+        return false;
       }
+      // mark as last good educational URL (also persisted by effect)
+      const { watchUrl, embedUrl } = normalizeYouTubeUrl(url);
+      setLastEducationalUrl(watchUrl || url);
+      try { apiSetLastEducationalUrl(watchUrl || url); } catch {}
+      if (embedUrl) setPlayerUrl(embedUrl);
+      setBlockReason(null);
+      return true;
     } catch (e) {
-      setBlockReason('Could not verify content. Backend offline?');
+      setBlockReason('Blocked: Invalid or unreachable URL');
+      if (lastEducationalUrl) setPlayerUrl(lastEducationalUrl);
+      return false;
     }
   };
 

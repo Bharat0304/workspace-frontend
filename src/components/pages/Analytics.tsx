@@ -66,11 +66,7 @@ const Analytics: React.FC = () => {
     date: '-', startTime: '-', endTime: '-', duration: '-', focusScore: 0, focusedTime: '0 min', distractedTime: '0 min', productivityScore: '-'
   };
 
-  const distractionBreakdown: DistractionData[] = [
-    { name: 'Instagram', duration: '1.8 min', icon: '📷', color: '#E91E63' },
-    { name: 'YouTube', duration: '1.2 min', icon: '📺', color: '#FF0000' },
-    { name: 'Phone Usage', duration: '0.5 min', icon: '📱', color: '#2196F3' }
-  ];
+  // Removed static distraction breakdown; charts now use live session data
 
   const insights: InsightData[] = [
     {
@@ -99,14 +95,16 @@ const Analytics: React.FC = () => {
     }
   ];
 
-  // Build a simple timeline from saved scores (every point == one reading)
+  // Timeline from saved timeline points; fallback to scores index if missing
   const timelineData = useMemo(() => {
-    if (!latest?.scores?.length) return [] as { time: string; type: 'focused' | 'distracted' }[];
-    const now = new Date(latest.endIso);
-    return latest.scores.map((s, i) => ({
-      time: `${i}`,
-      type: s >= 60 ? 'focused' : 'distracted'
-    }));
+    if (!latest) return [] as { t: number; score: number }[];
+    if (latest.timeline && latest.timeline.length) return latest.timeline.map(p => ({ t: p.t, score: p.score }));
+    if (latest.scores && latest.scores.length) return latest.scores.map((s, i) => ({ t: i, score: s }));
+    return [] as { t: number; score: number }[];
+  }, [latest]);
+
+  const sitesData = useMemo(() => {
+    return latest?.sites || [];
   }, [latest]);
 
   const handleExport = () => {
@@ -909,97 +907,143 @@ const Analytics: React.FC = () => {
             </div>
           </div>
 
-          {/* Distraction Breakdown */}
+          {/* Distraction Breakdown (Session Pies) */}
           <div style={styles.card}>
-            <h3 style={styles.sectionTitle}>Distraction Breakdown</h3>
-            <div style={styles.distractionSection}>
-              <div style={styles.pieChartContainer}>
-                <svg style={styles.pieChart} viewBox="0 0 100 100">
-                  <circle
-                    cx="50"
-                    cy="50"
-                    r="30"
-                    fill="none"
-                    stroke="#E91E63"
-                    strokeWidth="20"
-                    strokeDasharray="51.4 100"
-                    transform="rotate(-90 50 50)"
-                  />
-                  <circle
-                    cx="50"
-                    cy="50"
-                    r="30"
-                    fill="none"
-                    stroke="#FF0000"
-                    strokeWidth="20"
-                    strokeDasharray="34.3 100"
-                    strokeDashoffset="-51.4"
-                    transform="rotate(-90 50 50)"
-                  />
-                  <circle
-                    cx="50"
-                    cy="50"
-                    r="30"
-                    fill="none"
-                    stroke="#2196F3"
-                    strokeWidth="20"
-                    strokeDasharray="14.3 100"
-                    strokeDashoffset="-85.7"
-                    transform="rotate(-90 50 50)"
-                  />
-                  <text x="35" y="25" fontSize="8" fill="#E91E63">Instagram: 51.4%</text>
-                  <text x="15" y="85" fontSize="8" fill="#FF0000">YouTube: 34.3%</text>
-                  <text x="5" y="45" fontSize="8" fill="#2196F3">Phone: 14.3%</text>
-                </svg>
+            <h3 style={styles.sectionTitle}>Distraction Breakdown (This Session)</h3>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '2rem' }}>
+              {/* Time by Site Pie */}
+              <div style={{ textAlign: 'center' }}>
+                <div style={{ fontWeight: 700, marginBottom: 8 }}>Time by Site</div>
+                {(() => {
+                  const total = (sitesData || []).reduce((a, s) => a + (s.durationSec || 0), 0) || 0;
+                  if (!total) return <div style={{ color: '#6b7280' }}>No site time recorded</div>;
+                  const colors = ['#10b981','#f59e0b','#3b82f6','#ef4444','#8b5cf6','#14b8a6','#f43f5e','#84cc16'];
+                  let offset = 0;
+                  const r = 30, cx = 50, cy = 50, sw = 20;
+                  return (
+                    <svg viewBox="0 0 100 100" style={{ width: 220, height: 220 }}>
+                      {(sitesData || []).map((s, i) => {
+                        const pct = Math.max(0, (s.durationSec || 0) / total);
+                        const pct100 = pct * 100;
+                        const rest = 100 - pct100;
+                        const dash = `${pct100.toFixed(2)} ${rest.toFixed(2)}`;
+                        const rotate = -90 + offset * 360;
+                        offset += pct;
+                        return (
+                          <circle key={i} cx={cx} cy={cy} r={r} fill="none" stroke={colors[i % colors.length]} strokeWidth={sw}
+                            strokeDasharray={dash} transform={`rotate(${rotate} ${cx} ${cy})`} />
+                        );
+                      })}
+                      {/* Legend */}
+                      {(sitesData || []).slice(0,8).map((s,i)=>(
+                        <g key={`leg-${i}`}>
+                          <rect x={5} y={5+i*10} width={6} height={6} fill={colors[i%colors.length]} />
+                          <text x={14} y={11+i*10} fontSize={5.5} fill="#374151">{s.domain} ({Math.round((s.durationSec/total)*100)}%)</text>
+                        </g>
+                      ))}
+                    </svg>
+                  );
+                })()}
               </div>
 
-              <div style={styles.distractionList}>
-                {distractionBreakdown.map((distraction, index) => (
-                  <div key={index} style={styles.distractionItem}>
-                    <div style={styles.distractionInfo}>
-                      <span style={{...styles.distractionIcon, color: distraction.color}}>
-                        {distraction.icon}
-                      </span>
-                      <span style={styles.distractionName}>{distraction.name}</span>
-                    </div>
-                    <span style={styles.distractionDuration}>{distraction.duration}</span>
-                  </div>
-                ))}
-                <div style={styles.insight}>
-                  <span>💡</span>
-                  <span>Social media was your main distraction. Consider using website blockers during study time.</span>
-                </div>
+              {/* Focused Time by Site Pie (focus-minutes = duration * avgFocus) */}
+              <div style={{ textAlign: 'center' }}>
+                <div style={{ fontWeight: 700, marginBottom: 8 }}>Focused Time by Site</div>
+                {(() => {
+                  const focusUnits = (sitesData || []).map(s => ({ domain: s.domain, units: (s.durationSec||0) * (Math.max(0,Math.min(100,s.avgFocus))/100) }));
+                  const totalF = focusUnits.reduce((a, x) => a + x.units, 0) || 0;
+                  if (!totalF) return <div style={{ color: '#6b7280' }}>No focused time recorded</div>;
+                  const colors = ['#10b981','#f59e0b','#3b82f6','#ef4444','#8b5cf6','#14b8a6','#f43f5e','#84cc16'];
+                  let offset = 0;
+                  const r = 30, cx = 50, cy = 50, sw = 20;
+                  return (
+                    <svg viewBox="0 0 100 100" style={{ width: 220, height: 220 }}>
+                      {focusUnits.map((s, i) => {
+                        const pct = Math.max(0, s.units / totalF);
+                        const pct100 = pct * 100;
+                        const rest = 100 - pct100;
+                        const dash = `${pct100.toFixed(2)} ${rest.toFixed(2)}`;
+                        const rotate = -90 + offset * 360;
+                        offset += pct;
+                        return (
+                          <circle key={i} cx={cx} cy={cy} r={r} fill="none" stroke={colors[i % colors.length]} strokeWidth={sw}
+                            strokeDasharray={dash} transform={`rotate(${rotate} ${cx} ${cy})`} />
+                        );
+                      })}
+                      {/* Legend */}
+                      {focusUnits.slice(0,8).map((s,i)=>(
+                        <g key={`legF-${i}`}>
+                          <rect x={5} y={5+i*10} width={6} height={6} fill={colors[i%colors.length]} />
+                          <text x={14} y={11+i*10} fontSize={5.5} fill="#374151">{s.domain} ({Math.round((s.units/totalF)*100)}%)</text>
+                        </g>
+                      ))}
+                    </svg>
+                  );
+                })()}
               </div>
             </div>
           </div>
 
-          {/* Session Timeline */}
+          {/* Session Timeline (line-style chart) */}
           <div style={styles.card}>
             <div style={styles.timelineSection}>
               <h3 style={styles.sectionTitle}>Session Timeline</h3>
-              <div style={styles.timeline}>
-                {timelineData.length ? timelineData.map((point, index) => (
-                  <div key={index} style={styles.timelineBar}>
-                    <div style={ point.type === 'focused' ? styles.timelineBarFocused : styles.timelineBarDistracted } />
-                    <div style={styles.timelineTime}>{point.time}</div>
-                  </div>
-                )) : (<div style={{ color: '#6b7280' }}>No trend data yet. End a session to see your focus timeline.</div>)}
-              </div>
-              <div style={styles.timelineLegend}>
-                <div style={styles.legendItem}>
-                  <div style={{...styles.legendDot, ...styles.legendDotGreen}}></div>
-                  <span>Focused</span>
+              {timelineData.length ? (
+                <div style={{ background: '#f8fafc', borderRadius: '0.5rem', padding: '1rem', border: '1px solid #e5e7eb' }}>
+                  {(() => {
+                    const w = 700, h = 200, pad = 24;
+                    const points = timelineData;
+                    const maxT = Math.max(...points.map(p => p.t), 1);
+                    const maxS = 100, minS = 0;
+                    const toX = (t: number) => pad + (t / Math.max(1, maxT)) * (w - pad * 2);
+                    const toY = (s: number) => h - pad - ((s - minS) / (maxS - minS)) * (h - pad * 2);
+                    const path = points.map((p, i) => `${i === 0 ? 'M' : 'L'} ${toX(p.t)},${toY(p.score)}`).join(' ');
+                    return (
+                      <svg width={w} height={h} style={{ width: '100%', maxWidth: '100%' }}>
+                        <rect x={0} y={0} width={w} height={h} fill="#ffffff" rx={8} />
+                        <polyline fill="none" stroke="#3b82f6" strokeWidth={2} points={points.map(p => `${toX(p.t)},${toY(p.score)}`).join(' ')} />
+                        <path d={path} fill="none" stroke="#2563eb" strokeWidth={2} />
+                        {/* y-axis labels */}
+                        {[0,25,50,75,100].map((v,i)=>(
+                          <g key={i}>
+                            <line x1={pad} y1={toY(v)} x2={w-pad} y2={toY(v)} stroke="#e5e7eb" strokeDasharray="4 4" />
+                            <text x={4} y={toY(v)+4} fontSize={10} fill="#6b7280">{v}%</text>
+                          </g>
+                        ))}
+                        {/* x-axis end label */}
+                        <text x={w - pad} y={h - 4} fontSize={10} textAnchor="end" fill="#6b7280">time (s)</text>
+                      </svg>
+                    );
+                  })()}
                 </div>
-                <div style={styles.legendItem}>
-                  <div style={{...styles.legendDot, ...styles.legendDotRed}}></div>
-                  <span>Distracted</span>
-                </div>
-                <div style={styles.legendItem}>
-                  <div style={{...styles.legendDot, ...styles.legendDotYellow}}></div>
-                  <span>Break</span>
-                </div>
-              </div>
+              ) : (
+                <div style={{ color: '#6b7280' }}>No trend data yet. End a session to see your focus timeline.</div>
+              )}
             </div>
+          </div>
+
+          {/* Sites Summary (bar chart) */}
+          <div style={styles.card}>
+            <h3 style={styles.sectionTitle}>Sites Summary</h3>
+            {sitesData && sitesData.length ? (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                {sitesData.map((s, i) => {
+                  const widthPct = Math.max(2, Math.min(100, Math.round(s.avgFocus)));
+                  return (
+                    <div key={i} style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                      <div style={{ width: 160, color: '#111827', fontSize: 13, overflow: 'hidden', textOverflow: 'ellipsis' }}>{s.domain}</div>
+                      <div style={{ flex: 1, background: '#f3f4f6', borderRadius: 6, height: 14, position: 'relative' }}>
+                        <div style={{ width: `${widthPct}%`, background: widthPct>=85?'#10b981':widthPct>=60?'#f59e0b':'#ef4444', height: 14, borderRadius: 6 }} />
+                      </div>
+                      <div style={{ width: 80, textAlign: 'right', fontSize: 12, color: '#374151' }}>{Math.round(s.avgFocus)}%</div>
+                      <div style={{ width: 110, textAlign: 'right', fontSize: 12, color: '#6b7280' }}>{Math.round(s.durationSec/60)} min</div>
+                    </div>
+                  );
+                })}
+              </div>
+            ) : (
+              <div style={{ color: '#6b7280' }}>No site data recorded for the latest session.</div>
+            )}
           </div>
 
           {/* AI-Powered Insights */}

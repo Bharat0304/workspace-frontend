@@ -1,0 +1,17 @@
+{
+  "manifest_version": 3,
+  "name": "WorkSpace Focus Redirector",
+  "version": "0.1.0",
+  "description": "Redirects the active tab to the last educational lecture when a distracting site is detected.",
+  "permissions": ["tabs", "storage", "alarms", "activeTab", "notifications"],
+  "host_permissions": [
+    "http://localhost:8000/*",
+    "https://localhost:8000/*"
+  ],
+  "background": {
+    "service_worker": "background.js"
+  },
+  "action": {
+    "default_title": "WorkSpace Focus"
+  }
+}
